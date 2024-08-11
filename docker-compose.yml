@@ -1,0 +1,76 @@
+# Config the base services
+x-user-base-service: &user-base-service
+  image: user-api:latest
+  environment:
+    - EUREKA_URL=http://eureka-server:8761/eureka
+  depends_on:
+    - eureka-server
+  networks:
+    - backend
+
+x-payroll-base-service: &payroll-base-service
+  image: payroll-api:latest
+  environment:
+    - EUREKA_URL=http://eureka-server:8761/eureka
+  depends_on:
+    - eureka-server
+    - user-service
+  networks:
+    - backend
+
+
+# payroll-base-service: &payroll-base-service
+#   image: payroll-api:latest
+#   ports:
+#     - "8100:8100"
+#   depends_on:
+#     - eureka-server
+#     - user-service
+#   environment:
+#     - EUREKA_URL=http://eureka-server:8761/eureka
+#   networks:
+#     - backend
+
+
+services:
+  eureka-server:
+    image: eureka-server:latest
+    container_name: hr-system-eureka-server
+    ports:
+      - "8761:8761"
+    expose:
+      - "8761"
+    networks:
+        - backend
+
+  user-service:
+    <<: *user-base-service
+    container_name: hr-system-user-service-1
+    ports:
+      - "8000:8000"
+
+  payroll-service:
+    <<: *payroll-base-service
+    container_name: hr-system-payroll-service-1
+    ports:
+      - "8100:8100"
+
+  api-gateway:
+    image: api-gateway:latest
+    container_name: hr-system-gateway
+    ports:
+      - "8765:8765"
+    depends_on:
+      - eureka-server
+      - user-service
+      - payroll-service
+    expose:
+      - "8765"
+    environment:
+      - EUREKA_URL=http://eureka-server:8761/eureka
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
